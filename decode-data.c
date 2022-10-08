@@ -111,14 +111,11 @@ int main(int argc, const char *argv[]) {
    * group1
    */
   struct group1 group1;
-  int add_comma = 0;
 
   fprintf(fout, "  \"group1\": [");
 
-  for (unsigned i = 0; i < header1.group1_count; i++) {
-    parse_group1(&group1, fdata, fout, add_comma);
-    add_comma = 1;
-  }
+  for (unsigned i = 0; i < header1.group1_count; i++)
+    parse_group1(&group1, fdata, fout, i);
 
   fprintf(fout, "\n"
                 "  ],\n");
