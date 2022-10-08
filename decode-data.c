@@ -11,9 +11,9 @@
 struct group1 {
   uint32_t field1_start;
   uint32_t field1_end;
-  uint32_t field2_start;
-  uint32_t field2_end;
-  uint32_t length3;
+  uint32_t field3_start;
+  uint32_t field3_end;
+  uint32_t length4;
   uint32_t field6;
   uint32_t field7;
 };
@@ -25,14 +25,24 @@ struct header1 {
 };
 
 struct header2 {
-  uint32_t field3;
-  uint32_t field4;
-  uint32_t field5;
-  uint32_t field6;
+  uint32_t magic;
+  uint32_t version;
 };
 
-int parse_group1(struct group1 *group, FILE *fdata, FILE *fout, int add_comma) {
-  fread(group, sizeof(struct group1), 1, fdata);
+struct field3 {
+  uint8_t c1;
+  uint8_t c2;
+  uint8_t c3;
+  uint8_t c4;
+  uint8_t c5;
+  uint8_t c6;
+  uint8_t c7;
+  uint8_t c8;
+};
+
+int parse_group1(struct group1 *group1, FILE *fdata, FILE *fout,
+                 int add_comma) {
+  fread(group1, sizeof(struct group1), 1, fdata);
 
   if (add_comma)
     fputc(',', fout);
@@ -42,14 +52,14 @@ int parse_group1(struct group1 *group, FILE *fdata, FILE *fout, int add_comma) {
           "    {\n"
           "      \"field1_start\": %u,\n"
           "      \"field1_end\": %u,\n"
-          "      \"field2_start\": %u,\n"
-          "      \"field2_end\": %u,\n"
-          "      \"length3\": %u,\n"
+          "      \"field3_start\": %u,\n"
+          "      \"field3_end\": %u,\n"
+          "      \"length4\": %u,\n"
           "      \"field6\": %u,\n"
           "      \"field7\": %u\n"
           "    }",
-          group->field1_start, group->field1_end, group->field2_start,
-          group->field2_end, group->length3, group->field6, group->field7);
+          group1->field1_start, group1->field1_end, group1->field3_start,
+          group1->field3_end, group1->length4, group1->field6, group1->field7);
 
   return 0;
 }
@@ -71,17 +81,33 @@ int decode_header1(struct header1 *header1, FILE *fdata, FILE *fout) {
 
 int decode_header2(struct header2 *header2, uint32_t start, FILE *fdata,
                    FILE *fout) {
+  if (start == 0)
+    return 0;
+
   fseek(fdata, start, SEEK_SET);
   fread(header2, sizeof(struct header2), 1, fdata);
 
   fprintf(fout,
           "  \"header2\": {\n"
-          "    \"field3\": %u,\n"
-          "    \"field4\": %u,\n"
-          "    \"field5\": %u,\n"
-          "    \"field6\": %u\n"
-          "  }\n",
-          header2->field3, header2->field4, header2->field5, header2->field6);
+          "    \"magic\": %u,\n"
+          "    \"version\": %u\n"
+          "  },\n",
+          header2->magic, header2->version);
+
+  return 0;
+}
+
+int decode_field3(struct field3 *field3, uint32_t start, FILE *fdata,
+                  FILE *fout) {
+  fseek(fdata, start, SEEK_SET);
+  fread(field3, sizeof(struct field3), 1, fdata);
+
+  fprintf(fout,
+          "  \"field3\": [\n"
+          "    %d, %d, %d, %d, %d, %d, %d, %d\n"
+          "  ]\n",
+          field3->c1, field3->c2, field3->c3, field3->c4, field3->c5,
+          field3->c6, field3->c7, field3->c8);
 
   return 0;
 }
@@ -125,6 +151,12 @@ int main(int argc, const char *argv[]) {
    */
   struct header2 header2;
   decode_header2(&header2, header1.header2_start_at, fdata, fout);
+
+  /*
+   * field3
+   */
+  struct field3 field3;
+  decode_field3(&field3, group1.field3_start, fdata, fout);
 
   fprintf(fout, "}");
 
